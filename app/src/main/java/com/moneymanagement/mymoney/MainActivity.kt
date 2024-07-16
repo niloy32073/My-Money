@@ -22,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
+import com.moneymanagement.mymoney.db.AppDB
 import com.moneymanagement.mymoney.navigation.BottomNavItems
 import com.moneymanagement.mymoney.navigation.SetNavGraph
 import com.moneymanagement.mymoney.ui.components.BottomNavigationBar
@@ -33,23 +35,14 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val db = Room.databaseBuilder(applicationContext,AppDB::class.java,"app_db").build()
+        val repository = Repository(db)
         enableEdgeToEdge()
         setContent {
             val navController = rememberNavController()
             MyMoneyTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()
-                    /*bottomBar = {
-                        BottomNavigationBar(
-                            navController = navController
-                        )
-                        println(navController.currentBackStackEntry.toString())
-                        when(navController.currentBackStackEntry?.destination?.route){
-                            BottomNavItems.Home.route,BottomNavItems.Profile.route,BottomNavItems.Statistics.route,BottomNavItems.Transaction.route-> BottomNavigationBar(
-                                navController = navController
-                            )
-                        }
-                    }*/) { innerPadding ->
-                        SetNavGraph(navController = navController, startDestination = "signup")
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                        SetNavGraph(navController = navController, startDestination = "home", repository = repository, paddingValues = innerPadding)
                     }
                 }
             }
