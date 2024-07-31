@@ -28,11 +28,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +51,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,22 +60,53 @@ import androidx.navigation.compose.rememberNavController
 import com.moneymanagement.mymoney.R
 import com.moneymanagement.mymoney.navigation.BottomNavItems
 import com.moneymanagement.mymoney.ui.components.BottomNavigationBar
+import com.moneymanagement.mymoney.ui.components.CustomButton
+import com.moneymanagement.mymoney.ui.components.CustomEditText
 import com.moneymanagement.mymoney.ui.components.TransactionRow
 import com.moneymanagement.mymoney.ui.components.Wallet
+import kotlinx.coroutines.launch
 
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavHostController,paddingValues: PaddingValues){
+fun HomeScreen(navController: NavHostController, paddingValues: PaddingValues) {
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val modifier = Modifier.fillMaxWidth(.9f)
+    var walletName by remember {
+        mutableStateOf("")
+    }
+    var lastDigit by remember {
+        mutableStateOf("")
+    }
+    var balance by remember {
+        mutableFloatStateOf(0f)
+    }
+
+    var walletNameError by remember {
+        mutableStateOf<String?>(null)
+    }
+    var lastDigitError by remember {
+        mutableStateOf<String?>(null)
+    }
+    var balanceError by remember {
+        mutableStateOf<String?>(null)
+    }
+
     Scaffold(bottomBar = { BottomNavigationBar(navController = navController) }) {
-        val pagerState = rememberPagerState(initialPage = 0, pageCount = {3})
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(it),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            Column(modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(.25f), horizontalAlignment = Alignment.CenterHorizontally) {
+        val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(it),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(.25f), horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -131,7 +173,11 @@ fun HomeScreen(navController: NavHostController,paddingValues: PaddingValues){
                         fontWeight = FontWeight.W500,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
                             text = "$200/$400",
                             fontSize = 15.sp,
@@ -145,14 +191,25 @@ fun HomeScreen(navController: NavHostController,paddingValues: PaddingValues){
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    LinearProgressIndicator(progress = {.5f}, modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.error,trackColor = Color.Green)
+                    LinearProgressIndicator(
+                        progress = { .5f },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.error,
+                        trackColor = Color.Green
+                    )
                 }
             }
-            Column(modifier = Modifier
-                .fillMaxWidth(.9f)
-                .fillMaxHeight(.25f),
-            verticalArrangement = Arrangement.SpaceBetween) {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(.9f)
+                    .fillMaxHeight(.25f),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text(
                         text = "Wallets",
                         fontSize = 20.sp,
@@ -160,24 +217,38 @@ fun HomeScreen(navController: NavHostController,paddingValues: PaddingValues){
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "See All",
+                        text = "Add New One",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.W500,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.clickable {
+                            showBottomSheet = true
+                        }
                     )
                 }
-                HorizontalPager(state = pagerState, pageSize =PageSize.Fixed(300.dp), pageSpacing = 10.dp) {
+                HorizontalPager(
+                    state = pagerState,
+                    pageSize = PageSize.Fixed(300.dp),
+                    pageSpacing = 10.dp
+                ) {
                     Wallet()
                 }
             }
-            Spacer(modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp))
-            Column(modifier = Modifier
-                .fillMaxWidth(.9f)
-                .fillMaxHeight(),
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(.9f)
+                    .fillMaxHeight(),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(
                         text = "Transactions",
                         fontSize = 20.sp,
@@ -191,23 +262,29 @@ fun HomeScreen(navController: NavHostController,paddingValues: PaddingValues){
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                Spacer(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp))
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                )
                 Text(
                     text = "Today",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.W500,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp))
-                Column(modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth()
-                    .verticalScroll(state = rememberScrollState())) {
-                    for(i in 1..10){
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth()
+                        .verticalScroll(state = rememberScrollState())
+                ) {
+                    for (i in 1..10) {
                         TransactionRow()
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -215,12 +292,79 @@ fun HomeScreen(navController: NavHostController,paddingValues: PaddingValues){
             }
 
         }
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    showBottomSheet = false
+                },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(16.dp)
+                    )
+                    CustomEditText(
+                        title = "Wallet Name",
+                        modifier = modifier,
+                        keyboardType = KeyboardType.Text,
+                        errorMessage = walletNameError,
+                        onValueChanged = { value, error ->
+                            walletName = value
+                            walletNameError = error
+                        })
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(16.dp)
+                    )
+                    CustomEditText(
+                        title = "Identifier",
+                        modifier = modifier,
+                        keyboardType = KeyboardType.Text,
+                        errorMessage = lastDigitError,
+                        onValueChanged = { value, error ->
+                            lastDigit = value
+                            lastDigitError = error
+                        })
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(16.dp)
+                    )
+                    CustomEditText(
+                        title = "Phone",
+                        modifier = modifier,
+                        keyboardType = KeyboardType.Decimal,
+                        errorMessage = balanceError,
+                        onValueChanged = { value, error ->
+                            balance = value.toFloat()
+                            balanceError = error
+                        })
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CustomButton(
+                        title = "Add", textColor = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.fillMaxWidth(.9f)
+                    ) {
+                        /*TODO*/
+                    }
+                }
+
+            }
+        }
     }
 }
 
 @Preview
 @Composable
-fun HomePreview(){
+fun HomePreview() {
     val navController = rememberNavController()
     val paddingValues = PaddingValues(5.dp)
     HomeScreen(navController = navController, paddingValues = paddingValues)
