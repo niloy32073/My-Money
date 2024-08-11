@@ -230,6 +230,7 @@ fun SignUpScreen(navController: NavHostController,viewmodel: SignUpViewmodel) {
             ) {
                 if(name.length>1 && phone.isValidPhone() && email.isValidEmail() &&password.length>5 && password == retypedPassword){
                     viewmodel.addUser(User(name = name, phone = phone, email = email, password = password ,profilePicture = imageByteArray))
+                    navController.navigate("signin")
                 }
                 else{
                     if(name.length<=1)

@@ -1,9 +1,11 @@
 package com.moneymanagement.mymoney.ui.screens
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.moneymanagement.mymoney.Repository
+import com.moneymanagement.mymoney.UserStore
 import com.moneymanagement.mymoney.db.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +16,8 @@ class SignInViewmodel(private val repository: Repository):ViewModel() {
     val message = _message.asStateFlow()
     private val _isLogin= MutableStateFlow<Boolean>(false)
     val isLogin = _isLogin.asStateFlow()
-    fun login(email:String,password:String){
+    fun login(email:String,password:String,context: Context){
+        val userStore = UserStore(context)
         viewModelScope.launch {
             try {
                 val loggInOutput = repository.checkUser(email)
@@ -24,6 +27,7 @@ class SignInViewmodel(private val repository: Repository):ViewModel() {
                 else if(loggInOutput.password == password){
                     _message.value = "LogIn Successful"
                     _isLogin.value = true
+                    userStore.saveToken(id = loggInOutput.id)
                 }
                 else
                     _message.value = "Wrong Password"
@@ -33,4 +37,5 @@ class SignInViewmodel(private val repository: Repository):ViewModel() {
             }
         }
     }
+
 }

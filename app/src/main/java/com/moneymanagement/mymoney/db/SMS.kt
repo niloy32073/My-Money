@@ -10,7 +10,7 @@ import java.util.Locale
 @Entity(tableName = "smsTable")
 data class SMS (
     @PrimaryKey(autoGenerate = true) val id:Int=0,
-    val sender:String,
+    val sender:String?,
     val smsBody:String,
     val time:Long,
     val isRead:Boolean=false

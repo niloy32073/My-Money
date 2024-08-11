@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,9 +42,11 @@ import com.moneymanagement.mymoney.navigation.BottomNavItems
 import com.moneymanagement.mymoney.ui.components.BottomNavigationBar
 import com.moneymanagement.mymoney.ui.components.CustomButton
 import com.moneymanagement.mymoney.ui.components.CustomEditText
+import com.preat.peekaboo.image.picker.toImageBitmap
 
 @Composable
-fun ProfileScreen(navController: NavHostController){
+fun ProfileScreen(navController: NavHostController,profileScreenViewmodel: ProfileScreenViewmodel){
+    val user by profileScreenViewmodel.currentUser.collectAsState()
     var imageBitmap by remember {
         mutableStateOf<ImageBitmap?>(null)
     }
@@ -66,11 +69,12 @@ fun ProfileScreen(navController: NavHostController){
         mutableStateOf<String?>(null)
     }
     Scaffold(bottomBar = { BottomNavigationBar(navController = navController) }) {
+
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(it), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceAround) {
 
-            if (imageBitmap == null) {
+            if (user != null && user?.profilePicture == null) {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_supervised_user_circle_24),
                     contentDescription = "Profile",
@@ -80,12 +84,14 @@ fun ProfileScreen(navController: NavHostController){
 
                 )
             } else {
-                Image(bitmap = imageBitmap!!, contentDescription = "Profile Picture",modifier = Modifier
-                    .size(200.dp)
-                    .clip(shape = CircleShape))
+                user?.profilePicture?.toImageBitmap()?.let { it1 ->
+                    Image(bitmap = it1, contentDescription = "Profile Picture",modifier = Modifier
+                        .size(200.dp)
+                        .clip(shape = CircleShape))
+                }
             }
 
-            Text(text = "User Name", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            user?.name?.let { it1 -> Text(text = it1, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }
 
             Column(modifier = Modifier
                 .fillMaxWidth(.9f)
@@ -96,14 +102,14 @@ fun ProfileScreen(navController: NavHostController){
                 .padding(12.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(text = "User Phone :", fontWeight = FontWeight.W500, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Text(text = "Phone Number", fontWeight = FontWeight.W500, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    user?.phone?.let { it1 -> Text(text = it1, fontWeight = FontWeight.W500, color = MaterialTheme.colorScheme.onPrimaryContainer) }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider(thickness = 2.dp, modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(text = "User Email :", fontWeight = FontWeight.W500, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Text(text = "Email", fontWeight = FontWeight.W500, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    user?.email?.let { it1 -> Text(text = it1, fontWeight = FontWeight.W500, color = MaterialTheme.colorScheme.onPrimaryContainer) }
                 }
 
             }
@@ -116,7 +122,7 @@ fun ProfileScreen(navController: NavHostController){
                 )
                 .padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "User Phone :", fontWeight = FontWeight.W500, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(text = "Change Password", fontWeight = FontWeight.W500, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider(thickness = 2.dp, modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -144,7 +150,15 @@ fun ProfileScreen(navController: NavHostController){
             CustomButton(title = "Sign Out", textColor = MaterialTheme.colorScheme.primary,
                 containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.fillMaxWidth(.9f)) {
-
+                if(currentPassword == user?.password && retypedNewPassword == newPassword){
+                    profileScreenViewmodel.changePassword(newPassword=newPassword)
+                }
+                else if(currentPassword != user?.password){
+                    currentPasswordError="Password doesn't match"
+                }
+                else{
+                    retypedNewPasswordError="New Password doesn't match"
+                }
             }
 
         }
@@ -155,5 +169,5 @@ fun ProfileScreen(navController: NavHostController){
 @Composable
 fun PreviewProfile(){
     val navController = rememberNavController()
-    ProfileScreen(navController = navController)
+    //ProfileScreen(navController = navController)
 }

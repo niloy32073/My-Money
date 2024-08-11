@@ -33,6 +33,8 @@ import com.moneymanagement.mymoney.ui.components.CustomEditText
 
 @Composable
 fun SignInScreen(navController: NavHostController,viewmodel: SignInViewmodel){
+    val context = LocalContext.current
+
     val modifier = Modifier.fillMaxWidth(.9f)
     var email by remember {
         mutableStateOf("")
@@ -55,7 +57,6 @@ fun SignInScreen(navController: NavHostController,viewmodel: SignInViewmodel){
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        val context = LocalContext.current
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -98,10 +99,13 @@ fun SignInScreen(navController: NavHostController,viewmodel: SignInViewmodel){
                 modifier = Modifier.fillMaxWidth(.9f)
             ) {
                 if(email.isValidEmail() && password.length>5){
-                   viewmodel.login(email, password)
+                   viewmodel.login(email, password,context)
                    if(message!=null){
                        Toast.makeText(context,message,Toast.LENGTH_LONG).show()
                    }
+                    if(isLogin){
+                        navController.navigate(BottomNavItems.Home.route)
+                    }
                 }
                 else{
                     if(!email.isValidEmail())
