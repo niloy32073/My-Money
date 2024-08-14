@@ -15,4 +15,7 @@ interface WalletDao {
 
     @Query("SELECT * FROM walletTable")
     suspend fun getWallets():List<Wallet>?
+
+    @Query("SELECT * FROM walletTable WHERE id = :id")
+    suspend fun getWallet(id:Int):Wallet
 }

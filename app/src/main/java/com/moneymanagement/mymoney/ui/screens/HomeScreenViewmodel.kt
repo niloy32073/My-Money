@@ -8,14 +8,40 @@ import com.google.ai.client.generativeai.type.generationConfig
 import com.moneymanagement.mymoney.Repository
 import com.moneymanagement.mymoney.db.SMS
 import com.moneymanagement.mymoney.db.Transaction
-import com.moneymanagement.mymoney.db.TransactionType
 import com.moneymanagement.mymoney.db.Wallet
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.util.Calendar
 
-sealed class Output()
+data class Result(
+    val transactionType: String,
+    val transactionAmount: Double,
+    val expenseType: String
+)
+
+data class ErrorDetail(
+    val code: Int,
+    val message: String,
+    val status: String
+)
+
+sealed class ApiResponse {
+    data class Transaction(
+        val isTransaction: Boolean,
+        val result: Result
+    ) : ApiResponse()
+
+    data class NonTransaction(
+        val isTransaction: Boolean
+    ) : ApiResponse()
+
+    data class Error(
+        val error: ErrorDetail
+    ) : ApiResponse()
+}
 
 class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
     private val _wallets= MutableStateFlow<List<Wallet>>(emptyList())
@@ -42,46 +68,15 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
     private val _openBottomSheet= MutableStateFlow<Boolean>(false)
     val openBottomSheet = _openBottomSheet.asStateFlow()
 
-    val apiKey = "1036704232592"
+    val apiKey = "AIzaSyCF0_5_C_QrhIsjmjgNhPQrbOo0juTnDJs"
 
     val generativeModel = GenerativeModel(
-        modelName = "gemini-pro",
+        modelName = "gemini-1.5-flash",
         apiKey = apiKey,
         generationConfig = generationConfig {
             responseMimeType = "application/json"
         }
     )
-
-    val sms = SMS(
-        id = 0,
-        sender = "",
-        smsBody = "",
-        time = 0,
-        isRead = true
-    )
-
-
-    val prompt ="""
-        I give you a sms. Read this sms. sender: ${sms.sender} and SMS body: ${sms.smsBody} .
-        transaction Type can be either INCOME or EXPENSE.
-        transactionAmount will be the amount that transaction. if it's an income than transactionAmount will be just the newly added money not the new balance.
-        expenseType will be Health / Food / Education / Transportation / Accommodation / Others / NA(if transactionType is INCOME than expenseType will be NA) 
-        if the sms is a transactional give this response using this JSON schema:
-        Output = {
-            "isTransaction": boolean,
-            "result":{
-                "transactionType":String,
-                "transactionAmount":Double,
-                "expenseType":String
-            }
-        }
-        Return: Output
-        if the sms is a not transactional give this response using this JSON schema:
-        Output = {
-            "isTransaction": "false",
-        }
-        Return: Output
-    """.trimIndent()
 
     fun openBottomSheet(){
         _openBottomSheet.value = true
@@ -97,6 +92,18 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
         }
     }
 
+    fun insertTransaction(transaction: Transaction){
+        viewModelScope.launch {
+            repository.insertTransaction(transaction)
+        }
+    }
+
+    fun updateSMS(sms: SMS){
+        viewModelScope.launch {
+            repository.updateSMS(sms)
+        }
+    }
+
     fun unReadSMS(){
         viewModelScope.launch {
             val sms = repository.getUnreadSMS(isRead = false)
@@ -106,16 +113,88 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
         }
     }
 
+    fun fetchData(){
+        viewModelScope.launch {
+            fetchWallet()
+            delay(100)
+            fetchCurrentMonthTransactions()
+            delay(100)
+            calculateTotalBalance()
+            delay(100)
+            calculateThisMonthIncome()
+            delay(100)
+            calculateThisMonthExpenses()
+            delay(100)
+            unReadSMS()
+            delay(100)
+            smsAnalysis()
+            delay(100)
+            recentTransactions()
+        }
+    }
+
+
     fun smsAnalysis(){
         viewModelScope.launch {
+            println("SMS Analysing")
             unReadSMS.value.forEach { sms->
+                val prompt ="""
+                    I give you a sms. Read this sms. sender: ${sms.sender} and SMS body: ${sms.smsBody} .
+                    transaction Type can be either INCOME or EXPENSE.
+                    transactionAmount will be the amount that transaction. if it's an income than transactionAmount will be just the newly added money not the new balance.
+                    expenseType will be Health / Food / Education / Transportation / Accommodation / Others / NA(if transactionType is INCOME than expenseType will be NA) 
+                    if the sms is a transactional give this response using this JSON schema:
+                    Output = {
+                        "isTransaction": boolean,
+                        "result":{
+                            "transactionType":String,
+                            "transactionAmount":Double,
+                            "expenseType":String
+                        }
+                    }
+                    Return: Output
+                    if the sms is a not transactional give this response using this JSON schema:
+                    Output = {
+                        "isTransaction": "false",
+                    }
+                    Return: Output
+                """.trimIndent()
 
+                val output = generativeModel.generateContent(prompt)
+                println(output)
+                println(output.text)
+                val response = """${output.text}"""
+                val data = parseApiResponse(response)
+                delay(1000)
+                when(data){
+                    is ApiResponse.Transaction->{
+                        viewModelScope.launch {
+                            insertTransaction(Transaction(transactionType = data.result.transactionType, smsId = sms.id, expenseType = data.result.expenseType, transactionTime = sms.time, transactionAmount = data.result.transactionAmount, walletId = 0))
+                            updateSMS(SMS(id = sms.id, sender = sms.sender, smsBody = sms.smsBody, time = sms.time,isRead = true))
+                            fetchCurrentMonthTransactions()
+                            if(data.result.transactionType == "EXPENSE")
+                                calculateThisMonthExpenses()
+                            else{
+                                calculateThisMonthIncome()
+                            }
+                            recentTransactions()
+                        }
+                    }
+                    is ApiResponse.NonTransaction->{
+                        updateSMS(SMS(id = sms.id, sender = sms.sender, smsBody = sms.smsBody, time = sms.time,isRead = true))
+                        println("Not A Transaction")
+                    }
+                    else->{
+                        println("SomeThing Wrong...")
+                    }
+                }
             }
         }
     }
 
     fun fetchWallet(){
         viewModelScope.launch {
+            println("Wallet Fetching")
             val availableWallets = repository.getWallets()
             if(availableWallets != null){
                 _wallets.value = availableWallets
@@ -128,6 +207,7 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
 
     fun fetchCurrentMonthTransactions(){
         viewModelScope.launch {
+            println("CurrentMonth Transaction")
             val (startOfMonth, endOfMonth) = getCurrentMonthTimestamps()
             val currentMonthTransactions = repository.getTransactionsForCurrentMonth(startOfMonth,endOfMonth)
             if(currentMonthTransactions != null){
@@ -140,6 +220,7 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
     }
 
     fun calculateTotalBalance(){
+        println("Calculating Balance")
         var balance = 0.0
         wallets.value.forEach {
             balance += it.balance
@@ -147,9 +228,10 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
         _totalBalance.value=balance
     }
     fun calculateThisMonthExpenses(){
+        println("Calculating this month Expense")
         var balance = 0.0
         currentMonthTransactions.value.forEach {
-            if(it.transactionType==TransactionType.EXPENSE){
+            if(it.transactionType=="EXPENSE"){
                 balance += it.transactionAmount
             }
 
@@ -157,9 +239,10 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
         _thisMonthExpense.value=balance
     }
     fun calculateThisMonthIncome(){
+        println("Calculating this month income")
         var balance = 0.0
         currentMonthTransactions.value.forEach {
-            if(it.transactionType==TransactionType.INCOME){
+            if(it.transactionType=="INCOME"){
                 balance += it.transactionAmount
             }
 
@@ -167,6 +250,7 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
         _thisMonthIncome.value=balance
     }
     fun recentTransactions(){
+        println("Recent Transactions")
         val latestTransactions = currentMonthTransactions.value.sortedByDescending { it.transactionTime }.take(10)
         _recentTransactions.value = latestTransactions
     }
@@ -195,4 +279,27 @@ fun getCurrentMonthTimestamps(): Pair<Long, Long> {
     val endOfMonth = calendar.timeInMillis
 
     return Pair(startOfMonth, endOfMonth)
+}
+
+fun parseApiResponse(jsonString: String): ApiResponse {
+    val jsonObject = JSONObject(jsonString)
+    val isTransaction = jsonObject.getBoolean("isTransaction")
+
+    return if (isTransaction) {
+        val resultObject = jsonObject.getJSONObject("result")
+        val transactionType = resultObject.getString("transactionType")
+        val transactionAmount = resultObject.getDouble("transactionAmount")
+        val expenseType = resultObject.getString("expenseType")
+
+        ApiResponse.Transaction(
+            isTransaction = isTransaction,
+            result = Result(
+                transactionType = transactionType,
+                transactionAmount = transactionAmount,
+                expenseType = expenseType
+            )
+        )
+    } else {
+        ApiResponse.NonTransaction(isTransaction = isTransaction)
+    }
 }

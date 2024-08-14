@@ -13,11 +13,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.moneymanagement.mymoney.db.ExpenseType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropdownMenuForExpense(label: String, itemList: List<ExpenseType>, onSelectedValueChange:(ExpenseType) -> Unit) {
+fun DropdownMenuForExpense(label: String, itemList: List<String>, onSelectedValueChange:(String) -> Unit) {
     var isExpanded by remember {
         mutableStateOf(false)
     }
@@ -40,8 +39,8 @@ fun DropdownMenuForExpense(label: String, itemList: List<ExpenseType>, onSelecte
         )
         ExposedDropdownMenu(expanded = isExpanded, onDismissRequest = { isExpanded = false }) {
             itemList.forEach { item ->
-                DropdownMenuItem(text = { Text(text = item.name) }, onClick = {
-                    value = item.name
+                DropdownMenuItem(text = { Text(text = item) }, onClick = {
+                    value = item
                     isExpanded = false
                     onSelectedValueChange(item)
                 })

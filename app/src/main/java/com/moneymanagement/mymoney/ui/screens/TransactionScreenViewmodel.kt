@@ -40,7 +40,13 @@ class TransactionScreenViewmodel(private val repository: Repository):ViewModel()
         }
     }
 
-    fun openDialogBox(transaction: Transaction,wallet: Wallet){
+    fun updateWallet(wallet: Wallet){
+        viewModelScope.launch {
+            repository.updateWallet(wallet)
+        }
+    }
+
+    fun openDialogBox(transaction: Transaction,wallet: Wallet?){
         _openDialog.value = true
         _selectedTransaction.value = transaction
         _selectedWallet.value = wallet

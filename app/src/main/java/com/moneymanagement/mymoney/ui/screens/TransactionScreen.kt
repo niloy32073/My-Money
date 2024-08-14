@@ -30,15 +30,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
-import com.moneymanagement.mymoney.db.ExpenseType
 import com.moneymanagement.mymoney.db.Transaction
-import com.moneymanagement.mymoney.db.TransactionType
 import com.moneymanagement.mymoney.db.Wallet
 import com.moneymanagement.mymoney.ui.components.BottomNavigationBar
 import com.moneymanagement.mymoney.ui.components.CustomButton
 import com.moneymanagement.mymoney.ui.components.DropdownMenuForWallet
 import com.moneymanagement.mymoney.ui.components.DropdownMenuForExpense
 import com.moneymanagement.mymoney.ui.components.EditableTransactionRow
+import com.moneymanagement.mymoney.ui.components.TransactionRow
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -68,8 +67,14 @@ fun TransactionScreen(navController: NavHostController,transactionScreenViewmode
                             Text(text = date)
                         }
                         items(transactions){transaction->
-                            val wallet = wallets.first { it.id == transaction.walletId }
-                            EditableTransactionRow(transaction = transaction, wallet = wallet, transactionScreenViewmodel = transactionScreenViewmodel)
+                            val wallet = wallets.firstOrNull { it.id == transaction.walletId }
+                            if(transaction.walletId == 0){
+                                EditableTransactionRow(transaction = transaction, wallet = wallet, transactionScreenViewmodel = transactionScreenViewmodel)
+                            }
+                            else{
+                                TransactionRow(transaction = transaction, wallet = wallet!!)
+                            }
+
                         }
                     }
             }
@@ -80,7 +85,6 @@ fun TransactionScreen(navController: NavHostController,transactionScreenViewmode
 @Composable
 fun EditDialog(transactionScreenViewmodel: TransactionScreenViewmodel,wallets:List<Wallet>){
     val selectedItem by transactionScreenViewmodel.selectedTransaction.collectAsState()
-    val selectedWallet by transactionScreenViewmodel.selectedWallet.collectAsState()
     var newWalletId by remember {
         mutableIntStateOf(0)
     }
@@ -91,7 +95,7 @@ fun EditDialog(transactionScreenViewmodel: TransactionScreenViewmodel,wallets:Li
 
     Dialog(onDismissRequest = {transactionScreenViewmodel.closeDialogBox() }) {
         Card {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Modify Transaction",
                     modifier = Modifier.fillMaxWidth(),
@@ -101,9 +105,9 @@ fun EditDialog(transactionScreenViewmodel: TransactionScreenViewmodel,wallets:Li
                 Spacer(modifier = Modifier.height(16.dp))
                 DropdownMenuForWallet(label = "Wallet", itemList =wallets, onSelectedValueChange = {value-> newWalletId = value })
                 Spacer(modifier = Modifier.height(16.dp))
-                if(selectedItem?.transactionType   == TransactionType.EXPENSE)
+                if(selectedItem?.transactionType   == "EXPENSE")
                 {
-                    DropdownMenuForExpense(label = "Expense Type", itemList = listOf(ExpenseType.Food,ExpenseType.Health,ExpenseType.Others,ExpenseType.Education,ExpenseType.Accommodation,ExpenseType.Transportation), onSelectedValueChange = { value-> newExpenseType = value })
+                    DropdownMenuForExpense(label = "Expense Type", itemList = listOf("Food","Health","Others","Education","Accommodation","Transportation"), onSelectedValueChange = { value-> newExpenseType = value })
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -120,6 +124,12 @@ fun EditDialog(transactionScreenViewmodel: TransactionScreenViewmodel,wallets:Li
                         modifier = Modifier.width(100.dp)) {
                         if(selectedItem != null){
                             transactionScreenViewmodel.updateTransaction(Transaction(id = selectedItem!!.id, transactionType = selectedItem!!.transactionType, transactionTime = selectedItem!!.transactionTime, transactionAmount = selectedItem!!.transactionAmount, walletId = newWalletId, expenseType = (if(newExpenseType != null) newExpenseType else selectedItem!!.expenseType)!!, smsId = selectedItem!!.smsId))
+                            val wallet = wallets.firstOrNull{it.id == newWalletId}
+                            if(wallet != null){
+                                val newAmount = if (selectedItem?.transactionType   == "EXPENSE") wallet.balance - selectedItem!!.transactionAmount else wallet.balance + selectedItem!!.transactionAmount
+                                transactionScreenViewmodel.updateWallet(Wallet(id = wallet.id, name = wallet.name, lastDigits = wallet.lastDigits, balance = newAmount))
+                            }
+
                         }
                         transactionScreenViewmodel.closeDialogBox()
                     }

@@ -16,6 +16,7 @@ import com.moneymanagement.mymoney.ui.screens.SignInViewmodel
 import com.moneymanagement.mymoney.ui.screens.SignUpScreen
 import com.moneymanagement.mymoney.ui.screens.SignUpViewmodel
 import com.moneymanagement.mymoney.ui.screens.StatisticsScreen
+import com.moneymanagement.mymoney.ui.screens.StatisticsScreenViewModel
 import com.moneymanagement.mymoney.ui.screens.TransactionScreen
 import com.moneymanagement.mymoney.ui.screens.TransactionScreenViewmodel
 
@@ -24,18 +25,19 @@ fun SetNavGraph(navController: NavHostController,startDestination:String,reposit
     val homeScreenViewmodel = HomeScreenViewmodel(repository)
     val transactionScreenViewmodel = TransactionScreenViewmodel(repository)
     val profileScreenViewmodel = ProfileScreenViewmodel(repository,id)
+    val statisticsScreenViewModel = StatisticsScreenViewModel(repository)
     NavHost(navController = navController, startDestination = startDestination) {
         composable(BottomNavItems.Home.route){
             HomeScreen(navController,paddingValues, homeScreenViewmodel)
         }
         composable(BottomNavItems.Profile.route){
-            ProfileScreen(navController,profileScreenViewmodel)
+            ProfileScreen(navController,profileScreenViewmodel,id)
         }
         composable(BottomNavItems.Transaction.route){
             TransactionScreen(navController, transactionScreenViewmodel = transactionScreenViewmodel, homeScreenViewmodel = homeScreenViewmodel)
         }
         composable(BottomNavItems.Statistics.route){
-            StatisticsScreen(navController)
+            StatisticsScreen(navController,statisticsScreenViewModel,homeScreenViewmodel)
         }
         composable("signup"){
             SignUpScreen(navController,SignUpViewmodel(repository))

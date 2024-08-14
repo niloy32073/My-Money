@@ -3,6 +3,9 @@ package com.moneymanagement.mymoney.ui.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,14 +15,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +51,7 @@ import com.moneymanagement.mymoney.ui.components.CustomEditText
 import com.preat.peekaboo.image.picker.toImageBitmap
 
 @Composable
-fun ProfileScreen(navController: NavHostController,profileScreenViewmodel: ProfileScreenViewmodel){
+fun ProfileScreen(navController: NavHostController,profileScreenViewmodel: ProfileScreenViewmodel,id:Int){
     val user by profileScreenViewmodel.currentUser.collectAsState()
     var imageBitmap by remember {
         mutableStateOf<ImageBitmap?>(null)
@@ -69,10 +75,13 @@ fun ProfileScreen(navController: NavHostController,profileScreenViewmodel: Profi
         mutableStateOf<String?>(null)
     }
     Scaffold(bottomBar = { BottomNavigationBar(navController = navController) }) {
-
+        LaunchedEffect(true) {
+            profileScreenViewmodel.getUser(id)
+        }
         Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(it), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceAround) {
+            .fillMaxWidth()
+            .padding(it)
+            .verticalScroll(state = rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceAround) {
 
             if (user != null && user?.profilePicture == null) {
                 Icon(
@@ -83,16 +92,20 @@ fun ProfileScreen(navController: NavHostController,profileScreenViewmodel: Profi
                         .clip(shape = CircleShape)
 
                 )
-            } else {
+            } else if(user != null && user?.profilePicture != null) {
                 user?.profilePicture?.toImageBitmap()?.let { it1 ->
                     Image(bitmap = it1, contentDescription = "Profile Picture",modifier = Modifier
                         .size(200.dp)
                         .clip(shape = CircleShape))
                 }
             }
+            else{
+                println("User Null")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
 
             user?.name?.let { it1 -> Text(text = it1, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }
-
+            Spacer(modifier = Modifier.height(16.dp))
             Column(modifier = Modifier
                 .fillMaxWidth(.9f)
                 .background(
@@ -113,7 +126,7 @@ fun ProfileScreen(navController: NavHostController,profileScreenViewmodel: Profi
                 }
 
             }
-
+            Spacer(modifier = Modifier.height(16.dp))
             Column(modifier = Modifier
                 .fillMaxWidth(.9f)
                 .background(
@@ -147,6 +160,7 @@ fun ProfileScreen(navController: NavHostController,profileScreenViewmodel: Profi
                     
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
             CustomButton(title = "Sign Out", textColor = MaterialTheme.colorScheme.primary,
                 containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.fillMaxWidth(.9f)) {

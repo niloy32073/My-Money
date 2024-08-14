@@ -33,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
@@ -81,11 +82,18 @@ fun HomeScreen(
 
     Scaffold(bottomBar = { BottomNavigationBar(navController = navController) }) {
         val pagerState = rememberPagerState(initialPage = 0, pageCount = {wallets.size})
-        homeScreenViewmodel.fetchWallet()
-        homeScreenViewmodel.fetchCurrentMonthTransactions()
-        homeScreenViewmodel.calculateTotalBalance()
-        homeScreenViewmodel.calculateThisMonthIncome()
-        homeScreenViewmodel.calculateThisMonthExpenses()
+        //homeScreenViewmodel.fetchWallet()
+        //homeScreenViewmodel.fetchCurrentMonthTransactions()
+        //homeScreenViewmodel.calculateTotalBalance()
+        //homeScreenViewmodel.calculateThisMonthIncome()
+        //homeScreenViewmodel.calculateThisMonthExpenses()
+        //homeScreenViewmodel.unReadSMS()
+        //homeScreenViewmodel.smsAnalysis()
+        //homeScreenViewmodel.recentTransactions()
+
+        LaunchedEffect(true) {
+            homeScreenViewmodel.fetchData()
+        }
 
         Column(
             modifier = Modifier
@@ -183,7 +191,7 @@ fun HomeScreen(
                         )
                     }
                     LinearProgressIndicator(
-                        progress = { (thisMonthExpense / thisMonthIncome).toFloat() },
+                        progress = { (thisMonthExpense / thisMonthIncome + thisMonthExpense).toFloat() },
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.error,
                         trackColor = Color.Green
@@ -307,8 +315,10 @@ fun HomeScreen(
                     }
                     else{
                        recentTransactions.forEach {transaction->
-                           val wallet = wallets.first { it.id == transaction.walletId }
-                           TransactionRow(transaction,wallet)
+                           val wallet = wallets.firstOrNull { it.id == transaction.walletId }
+                           if(wallet != null){
+                               TransactionRow(transaction,wallet)
+                           }
                            Spacer(modifier = Modifier.height(8.dp))
                        }
                     }

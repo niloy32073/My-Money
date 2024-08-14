@@ -14,9 +14,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
@@ -32,19 +39,38 @@ import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.LineChart
 import ir.ehsannarmani.compose_charts.models.BarProperties
 import ir.ehsannarmani.compose_charts.models.Bars
+import ir.ehsannarmani.compose_charts.models.DotProperties
 import ir.ehsannarmani.compose_charts.models.DrawStyle
 import ir.ehsannarmani.compose_charts.models.Line
 
 
 @Composable
-fun StatisticsScreen(navController: NavHostController) {
+fun StatisticsScreen(navController: NavHostController,statisticsScreenViewModel: StatisticsScreenViewModel,homeScreenViewmodel: HomeScreenViewmodel) {
+    val totalBalance by homeScreenViewmodel.totalBalance.collectAsState()
+    val thisMonthExpense by homeScreenViewmodel.thisMonthExpense.collectAsState()
+    val currentMonthTransactions by homeScreenViewmodel.currentMonthTransactions.collectAsState()
+    val currentMonthIncome by statisticsScreenViewModel.currentMonthIncome.collectAsState()
+    val currentMonthExpense by statisticsScreenViewModel.currentMonthExpense.collectAsState()
+    val expenseTypeAmount by statisticsScreenViewModel.expenseTypeAmount.collectAsState()
+    var max by remember {
+        mutableDoubleStateOf(5.0)
+    }
+
+    var min by remember {
+        mutableDoubleStateOf(0.0)
+    }
 
     Scaffold(bottomBar = { BottomNavigationBar(navController = navController) }) { it ->
+            println(currentMonthTransactions)
+            statisticsScreenViewModel.fetchData(currentMonthTransactions)
+            println(currentMonthIncome)
+            println(currentMonthExpense)
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(it), horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceAround
+                .fillMaxWidth()
+                .padding(it)
+            , horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
         ) {
             Column(
                 modifier = Modifier
@@ -58,8 +84,10 @@ fun StatisticsScreen(navController: NavHostController) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 GaugeChart(
-                    percentValue = 72f, //between 0 and 100
-                    modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+                    percentValue = (((totalBalance - thisMonthExpense) * 100) /totalBalance).toFloat(), //between 0 and 100
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .fillMaxWidth(),
                     animation = fadeInAnimation(4000),
                     pointerDrawer = NeedleDrawer(needleColor = MaterialTheme.colorScheme.primary, baseSize = 12.dp),
                     arcDrawer = GaugeArcDrawer(thickness = 32.dp, cap = StrokeCap.Round)
@@ -68,7 +96,7 @@ fun StatisticsScreen(navController: NavHostController) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth(.95f)
-                    .fillMaxHeight(.45f)
+                    .fillMaxHeight(.6f)
             ) {
                 Text(
                     text = "This Week",
@@ -76,98 +104,75 @@ fun StatisticsScreen(navController: NavHostController) {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                println(expenseTypeAmount)
+
+                if(expenseTypeAmount.isNotEmpty()){
+                    max= expenseTypeAmount.maxOrNull() ?: 5.0
+                    min = expenseTypeAmount.minOrNull() ?: 0.0
+                }
+                println("$max  $min")
                 ColumnChart(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 22.dp),
+                        .padding(start = 20.dp, end = 20.dp, bottom = 50.dp),
                     data = listOf(
                         Bars(
-                            label = "Jan",
+                            label = "Health",
                             values = listOf(
                                 Bars.Data(
-                                    label = "Income",
-                                    value = 50.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
-                                ),
-                                Bars.Data(
                                     label = "Expense",
-                                    value = 70.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.error)
+                                    value = if(expenseTypeAmount.isNotEmpty()) expenseTypeAmount[0] else 0.0,
+                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
                                 ),
                             )
                         ),
                         Bars(
-                            label = "Feb",
+                            label = "Food",
                             values = listOf(
                                 Bars.Data(
-                                    label = "Income",
-                                    value = 80.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
-                                ),
-                                Bars.Data(
                                     label = "Expense",
-                                    value = 60.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.error)
+                                    value = if(expenseTypeAmount.isNotEmpty()) expenseTypeAmount[1] else 0.0,
+                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
                                 ),
                             )
                         ),
                         Bars(
-                            label = "Jan",
+                            label = "Education",
                             values = listOf(
                                 Bars.Data(
-                                    label = "Income",
-                                    value = 50.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
-                                ),
-                                Bars.Data(
                                     label = "Expense",
-                                    value = 70.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.error)
+                                    value = if(expenseTypeAmount.isNotEmpty()) expenseTypeAmount[2] else 0.0,
+                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
                                 ),
                             )
                         ),
                         Bars(
-                            label = "Feb",
+                            label = "Transportation",
                             values = listOf(
                                 Bars.Data(
-                                    label = "Income",
-                                    value = 80.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
-                                ),
-                                Bars.Data(
                                     label = "Expense",
-                                    value = 60.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.error)
+                                    value = if(expenseTypeAmount.isNotEmpty()) expenseTypeAmount[3] else 0.0,
+                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
                                 ),
                             )
                         ),
                         Bars(
-                            label = "Jan",
+                            label = "Accommodation",
                             values = listOf(
                                 Bars.Data(
-                                    label = "Income",
-                                    value = 50.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
-                                ),
-                                Bars.Data(
                                     label = "Expense",
-                                    value = 70.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.error)
+                                    value = if(expenseTypeAmount.isNotEmpty()) expenseTypeAmount[4] else 0.0,
+                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
                                 ),
                             )
                         ),
                         Bars(
-                            label = "Feb",
+                            label = "Others",
                             values = listOf(
                                 Bars.Data(
-                                    label = "Income",
-                                    value = 80.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
-                                ),
-                                Bars.Data(
                                     label = "Expense",
-                                    value = 60.0,
-                                    color = SolidColor(MaterialTheme.colorScheme.error)
+                                    value = if(expenseTypeAmount.isNotEmpty()) expenseTypeAmount[5] else 0.0,
+                                    color = SolidColor(MaterialTheme.colorScheme.secondary)
                                 ),
                             )
                         )
@@ -181,6 +186,8 @@ fun StatisticsScreen(navController: NavHostController) {
                         dampingRatio = Spring.DampingRatioMediumBouncy,
                         stiffness = Spring.StiffnessLow
                     ),
+                    maxValue = max,
+                    minValue = min,
                 )
 
             }
@@ -188,7 +195,7 @@ fun StatisticsScreen(navController: NavHostController) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth(.95f)
-                    .fillMaxHeight(.80f)
+                    .fillMaxHeight()
             ) {
                 Text(
                     text = "This Month",
@@ -199,94 +206,30 @@ fun StatisticsScreen(navController: NavHostController) {
                 LineChart(
                     data = listOf(
                         Line(
-                            label = "Income",
-                            values = listOf(
-                                117.87,
-                                66.49,
-                                68.04,
-                                134.71,
-                                127.0,
-                                180.23,
-                                158.64,
-                                159.14,
-                                110.52,
-                                67.13,
-                                43.48,
-                                158.63,
-                                67.89,
-                                163.13,
-                                159.86,
-                                68.23,
-                                137.48,
-                                35.18,
-                                73.09,
-                                44.98,
-                                195.12,
-                                155.03,
-                                59.62,
-                                144.67,
-                                195.42,
-                                48.95,
-                                21.93,
-                                147.92,
-                                74.42,
-                                132.02
-                            ),
-                            firstGradientFillColor = MaterialTheme.colorScheme.secondary,
-                            secondGradientFillColor = MaterialTheme.colorScheme.onSecondary,
-                            color = Brush.verticalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.onSecondary,
-                                    MaterialTheme.colorScheme.secondary
-                                ), startY = 0f, endY = 1f
-                            ),
-                            drawStyle = DrawStyle.Fill,
-                            curvedEdges = true
+                            label = "Expense",
+                            values = if(currentMonthExpense.isNotEmpty()) currentMonthExpense else listOf(0.0,0.0,0.0,0.0),
+                            color = SolidColor(Color.Red),
+                            curvedEdges = true,
+                            dotProperties = DotProperties(
+                                enabled = true,
+                                color = SolidColor(Color.White),
+                                strokeWidth = 4.dp,
+                                radius = 2.dp,
+                                strokeColor = SolidColor(Color.Red),
+                            )
                         ),
                         Line(
-                            label = "Linux",
-                            values = listOf(
-                                167.35,
-                                35.21,
-                                126.74,
-                                173.49,
-                                89.32,
-                                58.47,
-                                109.68,
-                                144.12,
-                                192.23,
-                                63.59,
-                                111.97,
-                                24.45,
-                                150.31,
-                                171.76,
-                                134.25,
-                                46.78,
-                                95.14,
-                                113.29,
-                                187.43,
-                                70.58,
-                                120.09,
-                                138.47,
-                                47.56,
-                                182.98,
-                                57.34,
-                                164.71,
-                                77.25,
-                                199.48,
-                                155.39,
-                                92.86
-                            ),
-                            firstGradientFillColor = MaterialTheme.colorScheme.error,
-                            secondGradientFillColor = MaterialTheme.colorScheme.errorContainer,
-                            color = Brush.verticalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.errorContainer,
-                                    MaterialTheme.colorScheme.error
-                                ), startY = 0f, endY = Float.POSITIVE_INFINITY
-                            ),
-                            drawStyle = DrawStyle.Fill,
-                            curvedEdges = false
+                            label = "Income",
+                            values = if(currentMonthIncome.isNotEmpty()) currentMonthIncome else listOf(0.0,0.0,0.0,0.0),
+                            color = SolidColor(Color.Green),
+                            curvedEdges = false,
+                            dotProperties = DotProperties(
+                                    enabled = true,
+                                color = SolidColor(Color.White),
+                                strokeWidth = 4.dp,
+                                radius = 2.dp,
+                                strokeColor = SolidColor(Color.Green),
+                            )
                         ),
                     )
                 )
