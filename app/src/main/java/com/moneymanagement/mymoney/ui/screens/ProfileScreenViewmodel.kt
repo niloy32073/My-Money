@@ -1,8 +1,10 @@
 package com.moneymanagement.mymoney.ui.screens
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.moneymanagement.mymoney.Repository
+import com.moneymanagement.mymoney.UserStore
 import com.moneymanagement.mymoney.db.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +25,13 @@ class ProfileScreenViewmodel(private val repository: Repository,private val id:I
         viewModelScope.launch {
             currentUser.value?.let { User(id= it.id, name = it.name, phone = it.phone, email = it.email, password = newPassword, profilePicture = it.profilePicture) }
                 ?.let { repository.updateUser(it) }
+        }
+    }
+
+    fun logOut(context: Context){
+        val userStore = UserStore(context)
+        viewModelScope.launch {
+            userStore.saveToken(id = 0)
         }
     }
 }

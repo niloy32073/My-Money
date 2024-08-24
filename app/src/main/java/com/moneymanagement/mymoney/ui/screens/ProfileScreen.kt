@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -53,6 +54,7 @@ import com.preat.peekaboo.image.picker.toImageBitmap
 @Composable
 fun ProfileScreen(navController: NavHostController,profileScreenViewmodel: ProfileScreenViewmodel,id:Int){
     val user by profileScreenViewmodel.currentUser.collectAsState()
+    val context = LocalContext.current
     var imageBitmap by remember {
         mutableStateOf<ImageBitmap?>(null)
     }
@@ -157,22 +159,23 @@ fun ProfileScreen(navController: NavHostController,profileScreenViewmodel: Profi
                 CustomButton(title = "Submit", textColor = MaterialTheme.colorScheme.primary,
                     containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.fillMaxWidth(.9f)) {
-                    
+                    if(currentPassword == user?.password && retypedNewPassword == newPassword){
+                        profileScreenViewmodel.changePassword(newPassword=newPassword)
+                    }
+                    else if(currentPassword != user?.password){
+                        currentPasswordError="Password doesn't match"
+                    }
+                    else{
+                        retypedNewPasswordError="New Password doesn't match"
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             CustomButton(title = "Sign Out", textColor = MaterialTheme.colorScheme.primary,
                 containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.fillMaxWidth(.9f)) {
-                if(currentPassword == user?.password && retypedNewPassword == newPassword){
-                    profileScreenViewmodel.changePassword(newPassword=newPassword)
-                }
-                else if(currentPassword != user?.password){
-                    currentPasswordError="Password doesn't match"
-                }
-                else{
-                    retypedNewPasswordError="New Password doesn't match"
-                }
+                profileScreenViewmodel.logOut(context = context)
+                navController.navigate("signin")
             }
 
         }

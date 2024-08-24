@@ -184,14 +184,14 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "${thisMonthExpense / thisMonthIncome}%",
+                            text = "${(thisMonthExpense / thisMonthIncome)*100}%",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.W500,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     LinearProgressIndicator(
-                        progress = { (thisMonthExpense / thisMonthIncome + thisMonthExpense).toFloat() },
+                        progress = { (thisMonthExpense / thisMonthIncome).toFloat() },
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.error,
                         trackColor = Color.Green

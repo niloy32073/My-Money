@@ -140,7 +140,7 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
             unReadSMS.value.forEach { sms->
                 val prompt ="""
                     I give you a sms. Read this sms. sender: ${sms.sender} and SMS body: ${sms.smsBody} .
-                    transaction Type can be either INCOME or EXPENSE.
+                    transaction Type can be either INCOME or EXPENSE. if you find no transactionAmount than count that sms as non-transactional
                     transactionAmount will be the amount that transaction. if it's an income than transactionAmount will be just the newly added money not the new balance.
                     expenseType will be Health / Food / Education / Transportation / Accommodation / Others / NA(if transactionType is INCOME than expenseType will be NA) 
                     if the sms is a transactional give this response using this JSON schema:

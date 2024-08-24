@@ -26,8 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import com.moneymanagement.mymoney.db.Transaction
@@ -64,7 +66,7 @@ fun TransactionScreen(navController: NavHostController,transactionScreenViewmode
                 .fillMaxWidth(.9f)) {
                     groupedTransactions.forEach { (date, transactions) ->
                         stickyHeader {
-                            Text(text = date)
+                            Text(text = date, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                         }
                         items(transactions){transaction->
                             val wallet = wallets.firstOrNull { it.id == transaction.walletId }
@@ -74,7 +76,7 @@ fun TransactionScreen(navController: NavHostController,transactionScreenViewmode
                             else{
                                 TransactionRow(transaction = transaction, wallet = wallet!!)
                             }
-
+                            Spacer(modifier = Modifier.fillMaxWidth().height(8.dp))
                         }
                     }
             }
