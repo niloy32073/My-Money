@@ -84,7 +84,7 @@ fun StatisticsScreen(navController: NavHostController,statisticsScreenViewModel:
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 GaugeChart(
-                    percentValue = (((totalBalance - thisMonthExpense) * 100) /totalBalance).toFloat(), //between 0 and 100
+                    percentValue = if(totalBalance!=0.0)(((totalBalance - thisMonthExpense) * 100) /totalBalance).toFloat() else 0f, //between 0 and 100
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .fillMaxWidth(),
