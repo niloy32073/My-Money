@@ -18,9 +18,10 @@ class SmsReceiver : BroadcastReceiver() {
 
     @SuppressLint("UnsafeProtectedBroadcastReceiver")
     override fun onReceive(context: Context, intent: Intent) {
+        println("Received")
         val bundle: Bundle? = intent.extras
         if (bundle != null) {
-            val db = Room.databaseBuilder(context, AppDB::class.java,"app_db").build()
+            val db = Room.databaseBuilder(context, AppDB::class.java, "app_db").build()
             val pdus = bundle["pdus"] as Array<*>
             for (pdu in pdus) {
                 val format = bundle.getString("format")
@@ -28,7 +29,7 @@ class SmsReceiver : BroadcastReceiver() {
                 val sender = smsMessage.displayOriginatingAddress
                 val messageBody = smsMessage.messageBody
                 val timestamp = smsMessage.timestampMillis
-                println(messageBody)
+                Log.d("SmsReceiver", "Sender: $sender, Message: $messageBody")
                 CoroutineScope(Dispatchers.IO).launch {
                     val smsDao = db.smsDao()
                     smsDao.insert(SMS(sender = sender, smsBody = messageBody, time = timestamp, isRead = false))
