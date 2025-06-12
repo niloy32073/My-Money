@@ -68,7 +68,7 @@ class HomeScreenViewmodel(private val repository: Repository):ViewModel() {
     private val _openBottomSheet= MutableStateFlow<Boolean>(false)
     val openBottomSheet = _openBottomSheet.asStateFlow()
 
-    val apiKey = "AIzaSyCF0_5_C_QrhIsjmjgNhPQrbOo0juTnDJs"
+    val apiKey = "Your API Key"
 
     val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash",
